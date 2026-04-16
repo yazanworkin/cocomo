@@ -4,749 +4,802 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COCOMO Estimator</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0b0e14;
-    --surface: #131720;
-    --surface2: #1a2030;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.13);
-    --accent: #4af0b0;
-    --accent2: #2dd4a0;
-    --accent-dim: rgba(74,240,176,0.12);
-    --accent-dim2: rgba(74,240,176,0.06);
-    --text: #e8edf5;
-    --text-muted: #6b7a94;
-    --text-mid: #9aa5ba;
-    --danger: #f06060;
-    --gold: #f0c060;
-    --mono: 'DM Mono', monospace;
-    --sans: 'Syne', sans-serif;
-  }
+:root {
+  --bg:        #f5f0e8;
+  --paper:     #faf7f2;
+  --paper2:    #f0ebe0;
+  --ink:       #2a2520;
+  --ink-mid:   #5a5248;
+  --ink-light: #8c8278;
+  --ink-faint: #b8b0a4;
+  --rule:      #ddd5c8;
+  --rule2:     #c8bfb0;
+  --accent:    #3d2b1f;
+  --gold:      #8b6914;
+  --gold-bg:   #fdf3d8;
+  --serif:     'Libre Baskerville', Georgia, serif;
+  --mono:      'DM Mono', monospace;
+}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--mono);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  min-height: 100vh;
+  padding: 48px 24px 80px;
+}
 
-  /* Grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(74,240,176,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(74,240,176,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* ── Page wrapper ── */
+.wrap {
+  max-width: 680px;
+  margin: 0 auto;
+}
 
-  /* Glow blob */
-  body::after {
-    content: '';
-    position: fixed;
-    top: -200px;
-    right: -200px;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(74,240,176,0.06) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
+/* ── Masthead ── */
+.masthead {
+  text-align: center;
+  padding-bottom: 28px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 32px;
+}
 
-  .page-wrapper {
-    position: relative;
-    z-index: 1;
-    max-width: 920px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-  }
+.masthead-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 10px;
+}
 
-  /* Header */
-  header {
-    margin-bottom: 48px;
-    animation: fadeUp 0.6s ease both;
-  }
+.masthead h1 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  line-height: 1.1;
+}
 
-  .header-label {
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .header-label::before {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 1px;
-    background: var(--accent);
-  }
+.masthead-sub {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink-mid);
+  font-style: italic;
+  line-height: 1.6;
+}
 
-  h1 {
-    font-family: var(--sans);
-    font-size: clamp(36px, 6vw, 64px);
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    color: var(--text);
-  }
+/* ── Tab switcher ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  width: 100%;
+}
 
-  h1 span {
-    color: var(--accent);
-  }
+.tab {
+  flex: 1;
+  padding: 10px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  background: var(--paper);
+  color: var(--ink-light);
+  cursor: pointer;
+  transition: all 0.15s;
+}
 
-  .header-sub {
-    margin-top: 12px;
-    font-size: 13px;
-    color: var(--text-muted);
-    max-width: 480px;
-    line-height: 1.6;
-  }
+.tab:first-child { border-right: 1.5px solid var(--ink); }
 
-  /* Tabs */
-  .tabs {
-    display: flex;
-    gap: 0;
-    margin-bottom: 32px;
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    overflow: hidden;
-    width: fit-content;
-    animation: fadeUp 0.6s 0.1s ease both;
-  }
+.tab.active {
+  background: var(--accent);
+  color: var(--paper);
+}
 
-  .tab-btn {
-    padding: 10px 28px;
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    position: relative;
-  }
+.tab:not(.active):hover {
+  background: var(--paper2);
+  color: var(--ink);
+}
 
-  .tab-btn:first-child { border-right: 1px solid var(--border2); }
+/* ── Panel ── */
+.panel { display: none; }
+.panel.active { display: block; }
 
-  .tab-btn.active {
-    background: var(--accent-dim);
-    color: var(--accent);
-  }
+/* ── Calculator block ── */
+.calc-block {
+  background: var(--paper);
+  border: 1.5px solid var(--rule2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
 
-  /* Panel */
-  .panel {
-    display: none;
-    animation: fadeUp 0.3s ease both;
-  }
-  .panel.active { display: block; }
+.block-label {
+  background: var(--paper2);
+  border-bottom: 1px solid var(--rule2);
+  padding: 8px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
 
-  /* Grid layout */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  .grid-em { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.block-body { padding: 20px; }
 
-  /* Card */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 16px;
-    transition: border-color 0.2s;
-  }
-  .card:hover { border-color: var(--border2); }
+/* ── Field rows ── */
+.row { display: grid; gap: 16px; margin-bottom: 14px; }
+.row:last-child { margin-bottom: 0; }
+.row-2 { grid-template-columns: 1fr 1fr; }
+.row-3 { grid-template-columns: 1fr 1fr 1fr; }
 
-  .card-title {
-    font-family: var(--sans);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .card-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+.field { display: flex; flex-direction: column; gap: 5px; }
 
-  /* Fields */
-  .field { margin-bottom: 0; }
-  .field label {
-    display: block;
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
+.field label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+}
 
-  input[type="number"], select {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  input[type="number"]:focus, select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(74,240,176,0.1);
-  }
-  select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7a94' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 32px;
-    cursor: pointer;
-  }
+input[type=number], select {
+  background: var(--bg);
+  border: 1px solid var(--rule2);
+  border-radius: 2px;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
 
-  /* Section divider */
-  .sec-divider {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin: 24px 0 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .sec-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+input[type=number]:focus, select:focus {
+  border-color: var(--ink);
+  background: var(--paper);
+}
 
-  /* Scale factor inputs */
-  .sf-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .sf-item label { font-size: 10px; }
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8278' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
 
-  /* Calculate button */
-  .calc-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 14px;
-    background: var(--accent);
-    color: #0b0e14;
-    border: none;
-    border-radius: 8px;
-    font-family: var(--sans);
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 24px;
-    text-transform: uppercase;
-  }
-  .calc-btn:hover {
-    background: #6af5c0;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(74,240,176,0.25);
-  }
-  .calc-btn:active { transform: translateY(0); }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
-  .btn-arrow {
-    font-size: 18px;
-    transition: transform 0.2s;
-  }
-  .calc-btn:hover .btn-arrow { transform: translateX(4px); }
+/* ── Sub-section divider ── */
+.sub-rule {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 14px;
+}
+.sub-rule::before, .sub-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
 
-  /* Results */
-  .results-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
-    margin-top: 24px;
-    opacity: 0;
-    transform: translateY(12px);
-    transition: all 0.4s ease;
-  }
-  .results-grid.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ── Calculate button ── */
+.calc-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  color: var(--paper);
+  border: none;
+  border-radius: 3px;
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.15s;
+}
+.calc-btn:hover { background: #2a1c12; }
+.calc-btn:active { transform: scale(0.99); }
 
-  .result-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 18px;
-    transition: border-color 0.2s;
-  }
-  .result-card:hover { border-color: var(--border2); }
-  .result-card.highlight {
-    border-color: rgba(74,240,176,0.3);
-    background: var(--accent-dim2);
-  }
+/* ── Results ── */
+.results {
+  background: var(--paper);
+  border: 1.5px solid var(--rule2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 16px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.results.show { opacity: 1; transform: none; pointer-events: auto; }
 
-  .result-label {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
+.results-head {
+  background: var(--gold-bg);
+  border-bottom: 1px solid #e8d898;
+  padding: 9px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
 
-  .result-value {
-    font-family: var(--sans);
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-  .result-value.cost { color: var(--accent); }
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: none;
+}
 
-  .result-unit {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
+.r-cell {
+  padding: 16px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.r-cell:nth-child(3n) { border-right: none; }
+.r-cell:nth-last-child(-n+3) { border-bottom: none; }
 
-  /* Formula info */
-  .formula-bar {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 12px;
-    display: none;
-  }
-  .formula-bar.visible { display: block; }
-  .formula-bar code {
-    color: var(--accent);
-    background: var(--accent-dim2);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-  }
+.r-cell.wide {
+  grid-column: span 3;
+  border-right: none;
+  background: var(--paper2);
+}
 
-  /* Mode badges */
-  .mode-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid var(--border2);
-    color: var(--text-muted);
-    margin-bottom: 16px;
-  }
-  .mode-badge .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-  }
+.r-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 5px;
+}
 
-  /* Responsive */
-  @media (max-width: 640px) {
-    .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    .grid-em { grid-template-columns: 1fr 1fr; }
-    .results-grid { grid-template-columns: 1fr 1fr; }
-    h1 { font-size: 36px; }
-  }
+.r-value {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  transition: opacity 0.2s;
+}
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+.r-value.cost {
+  font-size: 26px;
+  color: var(--gold);
+}
 
-  .panel-c1 { animation-delay: 0.15s; }
-  .panel-c2 { animation-delay: 0.15s; }
+.r-unit {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
 
-  /* Footer */
-  footer {
-    text-align: center;
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 60px;
-    letter-spacing: 0.05em;
-  }
-  footer a { color: var(--accent); text-decoration: none; }
+.formula-line {
+  padding: 10px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-light);
+  line-height: 1.9;
+  display: none;
+  word-break: break-word;
+}
+.formula-line.show { display: block; }
+.formula-line b { color: var(--ink); font-weight: 500; }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+/* ── Constants table ── */
+.const-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.const-table th {
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--rule2);
+  font-weight: 400;
+}
+.const-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-mid);
+}
+.const-table tr:last-child td { border-bottom: none; }
+.const-table .name { color: var(--ink); font-weight: 500; }
+.const-table .val { color: var(--gold); }
 
-  input[type=number]::-webkit-inner-spin-button,
-  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+/* ── Footer ── */
+footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+/* ── Effort Multiplier Table ── */
+.em-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.em-table thead th {
+  background: var(--paper2);
+  border-bottom: 1.5px solid var(--rule2);
+  padding: 8px 12px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  font-weight: 400;
+  text-align: left;
+}
+.em-table tbody tr {
+  border-bottom: 1px solid var(--rule);
+}
+.em-table tbody tr:last-child { border-bottom: none; }
+.em-table tbody tr:hover { background: #faf6ef; }
+.em-table td { padding: 8px 12px; vertical-align: middle; }
+.em-table .grp-label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: center;
+  background: var(--paper2);
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  writing-mode: vertical-rl;
+  width: 28px;
+  padding: 12px 6px;
+}
+.em-table .drv {
+  font-weight: 500;
+  color: var(--accent);
+  width: 52px;
+  letter-spacing: 0.05em;
+}
+.em-table .dsc {
+  color: var(--ink-mid);
+  font-size: 11px;
+}
+.em-table select {
+  width: 148px;
+  font-size: 11px;
+  padding: 5px 24px 5px 8px;
+  background-position: right 8px center;
+}
+.em-table .group-row td { border-top: 1px solid var(--rule2); }
+
+/* ── Receipt-style results ── */
+.receipt {
+  padding: 4px 0;
+}
+.receipt-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px dashed var(--rule);
+}
+.receipt-row:last-child { border-bottom: none; }
+.receipt-total {
+  padding: 14px 20px;
+  background: var(--gold-bg);
+  border-top: 1.5px solid #e8d898 !important;
+  border-bottom: none !important;
+}
+.receipt-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
+.receipt-total .receipt-label {
+  color: var(--gold);
+  font-size: 12px;
+}
+.receipt-value {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: right;
+  transition: opacity 0.2s;
+}
+.receipt-value.cost {
+  font-size: 26px;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+}
+.receipt-unit {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.receipt-divider {
+  height: 0;
+  border-top: 1.5px solid var(--rule2);
+  margin: 4px 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+  .row-2, .row-3 { grid-template-columns: 1fr; }
+  .results-grid { grid-template-columns: 1fr 1fr; }
+  .r-cell:nth-child(3n) { border-right: 1px solid var(--rule); }
+  .r-cell:nth-child(2n) { border-right: none; }
+  .r-cell.wide { grid-column: span 2; }
+}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="page-wrapper">
-
-  <header>
-    <div class="header-label">Software Cost Estimation</div>
-    <h1>COCOMO<br><span>Estimator</span></h1>
-    <p class="header-sub">Constructive Cost Model — calculate effort, schedule, team size & total project cost using COCOMO I (Basic) or COCOMO II.</p>
-  </header>
+  <div class="masthead">
+    <div class="masthead-eyebrow">Software Cost Estimation</div>
+    <h1>COCOMO Estimator</h1>
+    <p class="masthead-sub">Constructive Cost Model — Boehm (1981 &amp; 2000)</p>
+  </div>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('c1', this)">COCOMO I</button>
-    <button class="tab-btn" onclick="switchTab('c2', this)">COCOMO II</button>
+    <button class="tab active" onclick="switchTab('c1', this)">COCOMO I — Basic</button>
+    <button class="tab" onclick="switchTab('c2', this)">COCOMO II — Post-Architecture</button>
   </div>
 
-  <!-- =================== COCOMO I =================== -->
+  <!-- ════════════ COCOMO I ════════════ -->
   <div class="panel active" id="panel-c1">
 
-    <div class="card">
-      <div class="card-title">Project Parameters</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>KLOC — Kilo Lines of Code</label>
-          <input type="number" id="c1-kloc" value="10" min="0.1" step="0.1" placeholder="e.g. 10">
-        </div>
-        <div class="field">
-          <label>Project Mode</label>
-          <select id="c1-mode">
-            <option value="organic">Organic — small, simple team</option>
-            <option value="semi">Semi-detached — medium complexity</option>
-            <option value="embedded">Embedded — tight constraints</option>
-          </select>
-        </div>
+    <div class="calc-block">
+      <div class="block-label">Model Constants</div>
+      <div class="block-body">
+        <table class="const-table">
+          <thead><tr><th>Mode</th><th>a</th><th>b</th><th>c</th><th>d</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Organic</td><td class="val">2.4</td><td class="val">1.05</td><td class="val">2.5</td><td class="val">0.38</td><td>Small, familiar team</td></tr>
+            <tr><td class="name">Semi-Detached</td><td class="val">3.0</td><td class="val">1.12</td><td class="val">2.5</td><td class="val">0.35</td><td>Mixed experience</td></tr>
+            <tr><td class="name">Embedded</td><td class="val">3.6</td><td class="val">1.20</td><td class="val">2.5</td><td class="val">0.32</td><td>Tight constraints</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Cost Parameters</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>Avg. Monthly Salary (USD)</label>
-          <input type="number" id="c1-salary" value="8000" min="1">
+    <div class="calc-block">
+      <div class="block-label">Inputs</div>
+      <div class="block-body">
+        <div class="row row-2">
+          <div class="field"><label>Lines of Code (SLOC)</label><input type="number" id="c1-loc" value="10000" min="1" step="100"></div>
+          <div class="field"><label>Project Mode</label>
+            <select id="c1-mode">
+              <option value="organic">Organic</option>
+              <option value="semi">Semi-Detached</option>
+              <option value="embedded">Embedded</option>
+            </select>
+          </div>
         </div>
-        <div class="field">
-          <label>Working Hours / Month</label>
-          <input type="number" id="c1-hours" value="160" min="1">
+        <div class="row row-2">
+          <div class="field"><label>Monthly Salary (USD)</label><input type="number" id="c1-salary" value="8000" min="1"></div>
+          <div class="field"><label>Hours / Month</label><input type="number" id="c1-hours" value="160" min="1"></div>
         </div>
+        <button class="calc-btn" onclick="calcC1()">Calculate →</button>
       </div>
     </div>
 
-    <button class="calc-btn" onclick="calcC1()">
-      Calculate Estimate <span class="btn-arrow">→</span>
-    </button>
-
-    <div class="results-grid" id="c1-results">
-      <div class="result-card">
-        <div class="result-label">Effort</div>
-        <div class="result-value" id="r1-effort">—</div>
-        <div class="result-unit">person-months</div>
+    <div class="results" id="c1-res">
+      <div class="results-head">Estimation Summary</div>
+      <div class="receipt">
+        <div class="receipt-row">
+          <span class="receipt-label">Effort</span>
+          <span class="receipt-value" id="r1-e">— <span class="receipt-unit">person-months</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Development Time</span>
+          <span class="receipt-value" id="r1-t">— <span class="receipt-unit">months</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Average Staff</span>
+          <span class="receipt-value" id="r1-s">— <span class="receipt-unit">people</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Productivity</span>
+          <span class="receipt-value" id="r1-p">— <span class="receipt-unit">SLOC / PM</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Total Hours</span>
+          <span class="receipt-value" id="r1-h">— <span class="receipt-unit">hours</span></span>
+        </div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-row receipt-total">
+          <span class="receipt-label">Total Cost</span>
+          <span class="receipt-value cost" id="r1-c">—</span>
+        </div>
       </div>
-      <div class="result-card">
-        <div class="result-label">Dev. Time</div>
-        <div class="result-value" id="r1-tdev">—</div>
-        <div class="result-unit">months</div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Team Size</div>
-        <div class="result-value" id="r1-staff">—</div>
-        <div class="result-unit">avg people</div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Total Hours</div>
-        <div class="result-value" id="r1-hours">—</div>
-        <div class="result-unit">hours</div>
-      </div>
-      <div class="result-card highlight">
-        <div class="result-label">Total Cost</div>
-        <div class="result-value cost" id="r1-cost">—</div>
-        <div class="result-unit">USD</div>
-      </div>
+      <div class="formula-line" id="c1-fb"></div>
     </div>
-
-    <div class="formula-bar" id="c1-formula"></div>
 
   </div>
 
-  <!-- =================== COCOMO II =================== -->
+  <!-- ════════════ COCOMO II ════════════ -->
   <div class="panel" id="panel-c2">
 
-    <div class="card">
-      <div class="card-title">Size Input</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>Project Size</label>
-          <input type="number" id="c2-size" value="10" min="0.1" step="0.1">
+    <div class="calc-block">
+      <div class="block-label">Size &amp; Cost</div>
+      <div class="block-body">
+        <div class="row row-2">
+          <div class="field"><label>Project Size</label><input type="number" id="c2-size" value="10" min="0.1" step="0.1"></div>
+          <div class="field"><label>Unit</label>
+            <select id="c2-unit">
+              <option value="ksloc">KSLOC</option>
+              <option value="fp">Function Points</option>
+            </select>
+          </div>
         </div>
-        <div class="field">
-          <label>Size Unit</label>
-          <select id="c2-unit">
-            <option value="ksloc">KSLOC (Kilo Source Lines)</option>
-            <option value="fp">Function Points (auto-converts)</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Scale Factors — rate 0–6, lower = better</div>
-      <div class="grid-3">
-        <div class="sf-item field">
-          <label>Precedentedness (PREC)</label>
-          <input type="number" id="sf-prec" value="3" min="0" max="6" step="0.1">
-        </div>
-        <div class="sf-item field">
-          <label>Dev. Flexibility (FLEX)</label>
-          <input type="number" id="sf-flex" value="3" min="0" max="6" step="0.1">
-        </div>
-        <div class="sf-item field">
-          <label>Architecture/Risk (RESL)</label>
-          <input type="number" id="sf-resl" value="3" min="0" max="6" step="0.1">
-        </div>
-        <div class="sf-item field">
-          <label>Team Cohesion (TEAM)</label>
-          <input type="number" id="sf-team" value="3" min="0" max="6" step="0.1">
-        </div>
-        <div class="sf-item field">
-          <label>Process Maturity (PMAT)</label>
-          <input type="number" id="sf-pmat" value="3" min="0" max="6" step="0.1">
+        <div class="row row-2">
+          <div class="field"><label>Monthly Salary (USD)</label><input type="number" id="c2-salary" value="8000" min="1"></div>
+          <div class="field"><label>Hours / Month</label><input type="number" id="c2-hours" value="160" min="1"></div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Effort Multipliers — Nominal = 1.0</div>
-
-      <div class="sec-divider">Product Factors</div>
-      <div class="grid-em">
-        <div class="field"><label>Reliability (RELY)</label><select id="em-rely"><option value="0.82">Very Low (0.82)</option><option value="0.92">Low (0.92)</option><option value="1.00" selected>Nominal (1.00)</option><option value="1.10">High (1.10)</option><option value="1.26">Very High (1.26)</option></select></div>
-        <div class="field"><label>DB Size (DATA)</label><select id="em-data"><option value="0.90">Low (0.90)</option><option value="1.00" selected>Nominal (1.00)</option><option value="1.14">High (1.14)</option><option value="1.28">Very High (1.28)</option></select></div>
-        <div class="field"><label>Complexity (CPLX)</label><select id="em-cplx"><option value="0.73">Very Low (0.73)</option><option value="0.87">Low (0.87)</option><option value="1.00" selected>Nominal (1.00)</option><option value="1.17">High (1.17)</option><option value="1.34">Very High (1.34)</option><option value="1.74">Extra High (1.74)</option></select></div>
-        <div class="field"><label>Required Reuse (RUSE)</label><select id="em-ruse"><option value="0.95">Low (0.95)</option><option value="1.00" selected>Nominal (1.00)</option><option value="1.07">High (1.07)</option><option value="1.15">Very High (1.15)</option><option value="1.24">Extra High (1.24)</option></select></div>
-        <div class="field"><label>Documentation (DOCU)</label><select id="em-docu"><option value="0.81">Very Low (0.81)</option><option value="0.91">Low (0.91)</option><option value="1.00" selected>Nominal (1.00)</option><option value="1.11">High (1.11)</option><option value="1.23">Very High (1.23)</option></select></div>
-      </div>
-
-      <div class="sec-divider">Platform Factors</div>
-      <div class="grid-em">
-        <div class="field"><label>Execution Time (TIME)</label><select id="em-time"><option value="1.00" selected>Nominal (1.00)</option><option value="1.11">High (1.11)</option><option value="1.29">Very High (1.29)</option><option value="1.63">Extra High (1.63)</option></select></div>
-        <div class="field"><label>Main Storage (STOR)</label><select id="em-stor"><option value="1.00" selected>Nominal (1.00)</option><option value="1.05">High (1.05)</option><option value="1.17">Very High (1.17)</option><option value="1.46">Extra High (1.46)</option></select></div>
-        <div class="field"><label>Platform Volatility (PVOL)</label><select id="em-pvol"><option value="0.87">Low (0.87)</option><option value="1.00" selected>Nominal (1.00)</option><option value="1.15">High (1.15)</option><option value="1.30">Very High (1.30)</option></select></div>
-      </div>
-
-      <div class="sec-divider">Personnel Factors</div>
-      <div class="grid-em">
-        <div class="field"><label>Analyst Capability (ACAP)</label><select id="em-acap"><option value="1.42">Very Low (1.42)</option><option value="1.19">Low (1.19)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.85">High (0.85)</option><option value="0.71">Very High (0.71)</option></select></div>
-        <div class="field"><label>Programmer Capability (PCAP)</label><select id="em-pcap"><option value="1.34">Very Low (1.34)</option><option value="1.15">Low (1.15)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.88">High (0.88)</option><option value="0.76">Very High (0.76)</option></select></div>
-        <div class="field"><label>Personnel Continuity (PCON)</label><select id="em-pcon"><option value="1.29">Very Low (1.29)</option><option value="1.12">Low (1.12)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.90">High (0.90)</option><option value="0.81">Very High (0.81)</option></select></div>
-        <div class="field"><label>App Experience (APEX)</label><select id="em-apex"><option value="1.22">Very Low (1.22)</option><option value="1.10">Low (1.10)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.88">High (0.88)</option><option value="0.81">Very High (0.81)</option></select></div>
-        <div class="field"><label>Platform Experience (PLEX)</label><select id="em-plex"><option value="1.19">Very Low (1.19)</option><option value="1.09">Low (1.09)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.91">High (0.91)</option><option value="0.85">Very High (0.85)</option></select></div>
-        <div class="field"><label>Language Experience (LTEX)</label><select id="em-ltex"><option value="1.20">Very Low (1.20)</option><option value="1.09">Low (1.09)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.91">High (0.91)</option><option value="0.84">Very High (0.84)</option></select></div>
-      </div>
-
-      <div class="sec-divider">Project Factors</div>
-      <div class="grid-em">
-        <div class="field"><label>Use of Tools (TOOL)</label><select id="em-tool"><option value="1.17">Very Low (1.17)</option><option value="1.09">Low (1.09)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.90">High (0.90)</option><option value="0.78">Very High (0.78)</option></select></div>
-        <div class="field"><label>Multisite Dev. (SITE)</label><select id="em-site"><option value="1.22">Very Low (1.22)</option><option value="1.09">Low (1.09)</option><option value="1.00" selected>Nominal (1.00)</option><option value="0.93">High (0.93)</option><option value="0.86">Very High (0.86)</option><option value="0.80">Extra High (0.80)</option></select></div>
-        <div class="field"><label>Schedule (SCED)</label><select id="em-sced"><option value="1.43">Very Low (1.43)</option><option value="1.14">Low (1.14)</option><option value="1.00" selected>Nominal (1.00)</option><option value="1.00">High (1.00)</option></select></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Cost Parameters</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>Avg. Monthly Salary (USD)</label>
-          <input type="number" id="c2-salary" value="8000" min="1">
-        </div>
-        <div class="field">
-          <label>Working Hours / Month</label>
-          <input type="number" id="c2-hours" value="160" min="1">
+    <div class="calc-block">
+      <div class="block-label">Scale Factors — rate 0–6, lower = better</div>
+      <div class="block-body">
+        <div class="row row-3">
+          <div class="field"><label>PREC (w 0.019)</label><input type="number" id="sf-prec" value="3" min="0" max="6" step="0.1"></div>
+          <div class="field"><label>FLEX (w 0.507)</label><input type="number" id="sf-flex" value="3" min="0" max="6" step="0.1"></div>
+          <div class="field"><label>RESL (w 0.736)</label><input type="number" id="sf-resl" value="3" min="0" max="6" step="0.1"></div>
+          <div class="field"><label>TEAM (w 0.736)</label><input type="number" id="sf-team" value="3" min="0" max="6" step="0.1"></div>
+          <div class="field"><label>PMAT (w 0.507)</label><input type="number" id="sf-pmat" value="3" min="0" max="6" step="0.1"></div>
         </div>
       </div>
     </div>
 
-    <button class="calc-btn" onclick="calcC2()">
-      Calculate Estimate <span class="btn-arrow">→</span>
-    </button>
-
-    <div class="results-grid" id="c2-results">
-      <div class="result-card">
-        <div class="result-label">Scale Exp. (E)</div>
-        <div class="result-value" id="r2-e">—</div>
-        <div class="result-unit">exponent</div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">EAF</div>
-        <div class="result-value" id="r2-eaf">—</div>
-        <div class="result-unit">multiplier</div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Effort</div>
-        <div class="result-value" id="r2-effort">—</div>
-        <div class="result-unit">person-months</div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Dev. Time</div>
-        <div class="result-value" id="r2-tdev">—</div>
-        <div class="result-unit">months</div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Team Size</div>
-        <div class="result-value" id="r2-staff">—</div>
-        <div class="result-unit">avg people</div>
-      </div>
-      <div class="result-card">
-        <div class="result-label">Total Hours</div>
-        <div class="result-value" id="r2-hours">—</div>
-        <div class="result-unit">hours</div>
-      </div>
-      <div class="result-card highlight">
-        <div class="result-label">Total Cost</div>
-        <div class="result-value cost" id="r2-cost">—</div>
-        <div class="result-unit">USD</div>
+    <div class="calc-block">
+      <div class="block-label">Effort Multipliers — Nominal = 1.00</div>
+      <div class="block-body" style="padding:0;">
+        <table class="em-table">
+          <thead>
+            <tr>
+              <th class="em-group">Group</th>
+              <th class="em-driver">Driver</th>
+              <th class="em-desc">Description</th>
+              <th class="em-select">Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="group-row"><td class="grp-label" rowspan="5">Product</td>
+              <td class="drv">RELY</td><td class="dsc">Required Software Reliability</td>
+              <td><select id="em-rely"><option value="0.82">VL — 0.82</option><option value="0.92">L — 0.92</option><option value="1.00" selected>Nominal — 1.00</option><option value="1.10">H — 1.10</option><option value="1.26">VH — 1.26</option></select></td>
+            </tr>
+            <tr><td class="drv">DATA</td><td class="dsc">Database Size</td>
+              <td><select id="em-data"><option value="0.90">L — 0.90</option><option value="1.00" selected>Nominal — 1.00</option><option value="1.14">H — 1.14</option><option value="1.28">VH — 1.28</option></select></td>
+            </tr>
+            <tr><td class="drv">CPLX</td><td class="dsc">Product Complexity</td>
+              <td><select id="em-cplx"><option value="0.73">VL — 0.73</option><option value="0.87">L — 0.87</option><option value="1.00" selected>Nominal — 1.00</option><option value="1.17">H — 1.17</option><option value="1.34">VH — 1.34</option><option value="1.74">XH — 1.74</option></select></td>
+            </tr>
+            <tr><td class="drv">RUSE</td><td class="dsc">Required Reusability</td>
+              <td><select id="em-ruse"><option value="0.95">L — 0.95</option><option value="1.00" selected>Nominal — 1.00</option><option value="1.07">H — 1.07</option><option value="1.15">VH — 1.15</option><option value="1.24">XH — 1.24</option></select></td>
+            </tr>
+            <tr><td class="drv">DOCU</td><td class="dsc">Documentation Match to Lifecycle</td>
+              <td><select id="em-docu"><option value="0.81">VL — 0.81</option><option value="0.91">L — 0.91</option><option value="1.00" selected>Nominal — 1.00</option><option value="1.11">H — 1.11</option><option value="1.23">VH — 1.23</option></select></td>
+            </tr>
+            <tr class="group-row"><td class="grp-label" rowspan="3">Platform</td>
+              <td class="drv">TIME</td><td class="dsc">Execution Time Constraint</td>
+              <td><select id="em-time"><option value="1.00" selected>Nominal — 1.00</option><option value="1.11">H — 1.11</option><option value="1.29">VH — 1.29</option><option value="1.63">XH — 1.63</option></select></td>
+            </tr>
+            <tr><td class="drv">STOR</td><td class="dsc">Main Storage Constraint</td>
+              <td><select id="em-stor"><option value="1.00" selected>Nominal — 1.00</option><option value="1.05">H — 1.05</option><option value="1.17">VH — 1.17</option><option value="1.46">XH — 1.46</option></select></td>
+            </tr>
+            <tr><td class="drv">PVOL</td><td class="dsc">Platform Volatility</td>
+              <td><select id="em-pvol"><option value="0.87">L — 0.87</option><option value="1.00" selected>Nominal — 1.00</option><option value="1.15">H — 1.15</option><option value="1.30">VH — 1.30</option></select></td>
+            </tr>
+            <tr class="group-row"><td class="grp-label" rowspan="6">Personnel</td>
+              <td class="drv">ACAP</td><td class="dsc">Analyst Capability</td>
+              <td><select id="em-acap"><option value="1.42">VL — 1.42</option><option value="1.19">L — 1.19</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.85">H — 0.85</option><option value="0.71">VH — 0.71</option></select></td>
+            </tr>
+            <tr><td class="drv">PCAP</td><td class="dsc">Programmer Capability</td>
+              <td><select id="em-pcap"><option value="1.34">VL — 1.34</option><option value="1.15">L — 1.15</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.88">H — 0.88</option><option value="0.76">VH — 0.76</option></select></td>
+            </tr>
+            <tr><td class="drv">PCON</td><td class="dsc">Personnel Continuity</td>
+              <td><select id="em-pcon"><option value="1.29">VL — 1.29</option><option value="1.12">L — 1.12</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.90">H — 0.90</option><option value="0.81">VH — 0.81</option></select></td>
+            </tr>
+            <tr><td class="drv">APEX</td><td class="dsc">Application Experience</td>
+              <td><select id="em-apex"><option value="1.22">VL — 1.22</option><option value="1.10">L — 1.10</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.88">H — 0.88</option><option value="0.81">VH — 0.81</option></select></td>
+            </tr>
+            <tr><td class="drv">PLEX</td><td class="dsc">Platform Experience</td>
+              <td><select id="em-plex"><option value="1.19">VL — 1.19</option><option value="1.09">L — 1.09</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.91">H — 0.91</option><option value="0.85">VH — 0.85</option></select></td>
+            </tr>
+            <tr><td class="drv">LTEX</td><td class="dsc">Language &amp; Tool Experience</td>
+              <td><select id="em-ltex"><option value="1.20">VL — 1.20</option><option value="1.09">L — 1.09</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.91">H — 0.91</option><option value="0.84">VH — 0.84</option></select></td>
+            </tr>
+            <tr class="group-row"><td class="grp-label" rowspan="3">Project</td>
+              <td class="drv">TOOL</td><td class="dsc">Use of Software Tools</td>
+              <td><select id="em-tool"><option value="1.17">VL — 1.17</option><option value="1.09">L — 1.09</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.90">H — 0.90</option><option value="0.78">VH — 0.78</option></select></td>
+            </tr>
+            <tr><td class="drv">SITE</td><td class="dsc">Multisite Development</td>
+              <td><select id="em-site"><option value="1.22">VL — 1.22</option><option value="1.09">L — 1.09</option><option value="1.00" selected>Nominal — 1.00</option><option value="0.93">H — 0.93</option><option value="0.86">VH — 0.86</option><option value="0.80">XH — 0.80</option></select></td>
+            </tr>
+            <tr><td class="drv">SCED</td><td class="dsc">Required Development Schedule</td>
+              <td><select id="em-sced"><option value="1.43">VL — 1.43</option><option value="1.14">L — 1.14</option><option value="1.00" selected>Nominal — 1.00</option><option value="1.00">H — 1.00</option></select></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding:20px;">
+          <button class="calc-btn" onclick="calcC2()">Calculate →</button>
+        </div>
       </div>
     </div>
 
-    <div class="formula-bar" id="c2-formula"></div>
+    <div class="results" id="c2-res">
+      <div class="results-head">Estimation Summary</div>
+      <div class="receipt">
+        <div class="receipt-row">
+          <span class="receipt-label">Scale Exponent (B)</span>
+          <span class="receipt-value" id="r2-b">—</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Composite EAF</span>
+          <span class="receipt-value" id="r2-eaf">—</span>
+        </div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-row">
+          <span class="receipt-label">Effort</span>
+          <span class="receipt-value" id="r2-e">— <span class="receipt-unit">person-months</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Development Time</span>
+          <span class="receipt-value" id="r2-t">— <span class="receipt-unit">months</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Average Staff</span>
+          <span class="receipt-value" id="r2-s">— <span class="receipt-unit">people</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Productivity</span>
+          <span class="receipt-value" id="r2-p">— <span class="receipt-unit">SLOC / PM</span></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Total Hours</span>
+          <span class="receipt-value" id="r2-h">— <span class="receipt-unit">hours</span></span>
+        </div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-row receipt-total">
+          <span class="receipt-label">Total Cost</span>
+          <span class="receipt-value cost" id="r2-c">—</span>
+        </div>
+      </div>
+      <div class="formula-line" id="c2-fb"></div>
+    </div>
+
   </div>
 
-  <footer>
-    Built with COCOMO I (Boehm, 1981) &amp; COCOMO II (Boehm et al., 2000) models.
-  </footer>
-
+  <footer>Based on Boehm (1981) COCOMO I &amp; Boehm et al. (2000) COCOMO II Post-Architecture Model</footer>
 </div>
 
 <script>
-  function switchTab(tab, el) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('panel-' + tab).classList.add('active');
-  }
+function switchTab(t, el) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + t).classList.add('active');
+}
 
-  function fmtCost(n) {
-    if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
-    if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
-    if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
-    return '$' + n.toFixed(0);
-  }
+function fmtCost(n) {
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
 
-  function animateValue(el, value, formatter, delay) {
+function anim(id, val, fmt, delay) {
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    el.style.opacity = '0';
     setTimeout(() => {
-      el.style.transition = 'opacity 0.3s';
-      el.style.opacity = '0';
-      setTimeout(() => {
-        el.textContent = formatter(value);
-        el.style.opacity = '1';
-      }, 150);
-    }, delay);
-  }
+      // preserve child spans (receipt-unit), only update first text node
+      const span = el.querySelector('.receipt-unit');
+      if (span) {
+        el.childNodes[0].textContent = fmt(val) + ' ';
+      } else {
+        el.textContent = fmt(val);
+      }
+      el.style.opacity = '1';
+    }, 100);
+  }, delay);
+}
 
-  function calcC1() {
-    const kloc = parseFloat(document.getElementById('c1-kloc').value) || 0;
-    const mode = document.getElementById('c1-mode').value;
-    const salary = parseFloat(document.getElementById('c1-salary').value) || 0;
-    const hours = parseFloat(document.getElementById('c1-hours').value) || 1;
+const f2 = v => v.toFixed(2);
+const f3 = v => v.toFixed(3);
+const f1 = v => v.toFixed(1);
+const f0 = v => Math.round(v).toLocaleString();
 
-    const P = { organic: {a:2.4,b:1.05,c:2.5,d:0.38}, semi: {a:3.0,b:1.12,c:2.5,d:0.35}, embedded: {a:3.6,b:1.20,c:2.5,d:0.32} };
-    const p = P[mode];
-    const effort = p.a * Math.pow(kloc, p.b);
-    const tdev = p.c * Math.pow(effort, p.d);
-    const staff = effort / tdev;
-    const totalCost = effort * salary;
-    const totalHrs = effort * hours;
+function calcC1() {
+  const loc  = parseFloat(document.getElementById('c1-loc').value) || 0;
+  const kloc = loc / 1000;
+  const mode = document.getElementById('c1-mode').value;
+  const sal  = parseFloat(document.getElementById('c1-salary').value) || 0;
+  const hrs  = parseFloat(document.getElementById('c1-hours').value) || 1;
+  const P = { organic:{a:2.4,b:1.05,c:2.5,d:0.38}, semi:{a:3.0,b:1.12,c:2.5,d:0.35}, embedded:{a:3.6,b:1.20,c:2.5,d:0.32} };
+  const p = P[mode];
+  const E = p.a * Math.pow(kloc, p.b);
+  const T = p.c * Math.pow(E, p.d);
+  const S = E / T;
+  const Pr = loc / E;
+  const H = E * hrs;
+  const C = E * sal;
+  document.getElementById('c1-res').classList.add('show');
+  anim('r1-e', E,  f2,     0);
+  anim('r1-t', T,  f2,    60);
+  anim('r1-s', S,  f2,   120);
+  anim('r1-p', Pr, f1,   180);
+  anim('r1-h', H,  f0,   240);
+  anim('r1-c', C,  fmtCost, 300);
+  const fb = document.getElementById('c1-fb');
+  fb.classList.add('show');
+  fb.innerHTML = `KLOC=${kloc.toFixed(3)} &nbsp;·&nbsp; E = ${p.a}×(${kloc.toFixed(3)})^${p.b} = <b>${E.toFixed(2)} PM</b> &nbsp;·&nbsp; TDEV = ${p.c}×(${E.toFixed(2)})^${p.d} = <b>${T.toFixed(2)} mo</b> &nbsp;·&nbsp; Staff = <b>${S.toFixed(2)}</b>`;
+}
 
-    const rg = document.getElementById('c1-results');
-    rg.classList.add('visible');
-
-    const fmt2 = v => v.toFixed(1);
-    const fmt0 = v => Math.round(v).toLocaleString();
-
-    animateValue(document.getElementById('r1-effort'), effort, fmt2, 0);
-    animateValue(document.getElementById('r1-tdev'), tdev, fmt2, 80);
-    animateValue(document.getElementById('r1-staff'), staff, fmt2, 160);
-    animateValue(document.getElementById('r1-hours'), totalHrs, fmt0, 240);
-    animateValue(document.getElementById('r1-cost'), totalCost, fmtCost, 320);
-
-    const fb = document.getElementById('c1-formula');
-    fb.classList.add('visible');
-    fb.innerHTML = `E = <code>${p.a} × ${kloc.toFixed(1)}<sup>${p.b}</sup></code> = <code>${effort.toFixed(2)} PM</code> &nbsp;|&nbsp; T = <code>${p.c} × ${effort.toFixed(2)}<sup>${p.d}</sup></code> = <code>${tdev.toFixed(2)} months</code>`;
-  }
-
-  function calcC2() {
-    let size = parseFloat(document.getElementById('c2-size').value) || 0;
-    const unit = document.getElementById('c2-unit').value;
-    const salary = parseFloat(document.getElementById('c2-salary').value) || 0;
-    const hours = parseFloat(document.getElementById('c2-hours').value) || 1;
-
-    if (unit === 'fp') size = size * 0.053;
-
-    const W = [0.019, 0.507, 0.736, 0.736, 0.507];
-    const sfVals = ['prec','flex','resl','team','pmat'].map(id => parseFloat(document.getElementById('sf-'+id).value));
-    const SF = sfVals.reduce((s, v, i) => s + W[i]*v, 0);
-    const E = 0.91 + 0.01 * SF;
-
-    const emIds = ['rely','data','cplx','ruse','docu','time','stor','pvol','acap','pcap','pcon','apex','plex','ltex','tool','site','sced'];
-    const EAF = emIds.reduce((p, id) => p * parseFloat(document.getElementById('em-'+id).value), 1);
-
-    const A = 2.94;
-    const effort = A * EAF * Math.pow(size, E);
-    const F = 0.28 + 0.002 * SF;
-    const tdev = 3.67 * Math.pow(effort, F);
-    const staff = effort / tdev;
-    const totalCost = effort * salary;
-    const totalHrs = effort * hours;
-
-    const rg = document.getElementById('c2-results');
-    rg.classList.add('visible');
-
-    const fmt3 = v => v.toFixed(3);
-    const fmt2 = v => v.toFixed(1);
-    const fmt0 = v => Math.round(v).toLocaleString();
-
-    animateValue(document.getElementById('r2-e'), E, fmt3, 0);
-    animateValue(document.getElementById('r2-eaf'), EAF, fmt3, 60);
-    animateValue(document.getElementById('r2-effort'), effort, fmt2, 120);
-    animateValue(document.getElementById('r2-tdev'), tdev, fmt2, 180);
-    animateValue(document.getElementById('r2-staff'), staff, fmt2, 240);
-    animateValue(document.getElementById('r2-hours'), totalHrs, fmt0, 300);
-    animateValue(document.getElementById('r2-cost'), totalCost, fmtCost, 380);
-
-    const fb = document.getElementById('c2-formula');
-    fb.classList.add('visible');
-    fb.innerHTML = `E = <code>0.91 + 0.01×${SF.toFixed(2)} = ${E.toFixed(3)}</code> &nbsp;|&nbsp; EAF = <code>${EAF.toFixed(3)}</code> &nbsp;|&nbsp; Effort = <code>2.94 × ${EAF.toFixed(3)} × ${size.toFixed(2)}<sup>${E.toFixed(3)}</sup> = ${effort.toFixed(2)} PM</code>`;
-  }
+function calcC2() {
+  let size = parseFloat(document.getElementById('c2-size').value) || 0;
+  if (document.getElementById('c2-unit').value === 'fp') size *= 0.053;
+  const sal = parseFloat(document.getElementById('c2-salary').value) || 0;
+  const hrs = parseFloat(document.getElementById('c2-hours').value) || 1;
+  const W = [0.019, 0.507, 0.736, 0.736, 0.507];
+  const SF = ['prec','flex','resl','team','pmat'].reduce((s,id,i) => s + W[i]*parseFloat(document.getElementById('sf-'+id).value), 0);
+  const B  = 0.91 + 0.01 * SF;
+  const EAF = ['rely','data','cplx','ruse','docu','time','stor','pvol','acap','pcap','pcon','apex','plex','ltex','tool','site','sced'].reduce((p,id) => p * parseFloat(document.getElementById('em-'+id).value), 1);
+  const PM   = 2.94 * EAF * Math.pow(size, B);
+  const F    = 0.28 + 0.002 * SF;
+  const TDEV = 3.67 * Math.pow(PM, F);
+  const S    = PM / TDEV;
+  const Pr   = (size * 1000) / PM;
+  const H    = PM * hrs;
+  const C    = PM * sal;
+  document.getElementById('c2-res').classList.add('show');
+  anim('r2-b',   B,    f3,   0);
+  anim('r2-eaf', EAF,  f3,  60);
+  anim('r2-e',   PM,   f2, 120);
+  anim('r2-t',   TDEV, f2, 180);
+  anim('r2-s',   S,    f2, 240);
+  anim('r2-p',   Pr,   f1, 300);
+  anim('r2-h',   H,    f0, 360);
+  anim('r2-c',   C,    fmtCost, 420);
+  const fb = document.getElementById('c2-fb');
+  fb.classList.add('show');
+  fb.innerHTML = `ΣSF=${SF.toFixed(3)} → B=<b>${B.toFixed(3)}</b> &nbsp;·&nbsp; EAF=<b>${EAF.toFixed(4)}</b> &nbsp;·&nbsp; PM = 2.94×${EAF.toFixed(3)}×${size.toFixed(2)}^${B.toFixed(3)} = <b>${PM.toFixed(2)}</b> &nbsp;·&nbsp; TDEV = 3.67×${PM.toFixed(2)}^${F.toFixed(3)} = <b>${TDEV.toFixed(2)} mo</b>`;
+}
 </script>
 </body>
 </html>
